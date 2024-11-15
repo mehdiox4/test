@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ordre des Commandes</title>
+    <style>
+        /* Style général du body */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #111;
+            background-image: url(QG.jpg);
+            background-size: cover; 
+            background-position: center; /* Centrer l'image */
+            background-attachment: fixed;
+            color: #fff; /* Texte blanc */
+        }
+
+        /* En-tête avec logo */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: #111; /* Arrière-plan sombre */
+            color: white;
+            padding: 5px;
+            border-radius: 8px;
+            border-bottom: 2px solid #fff;
+        }
+
+        header img {
+            height: 150px;  /* Taille du logo */
+            width: auto;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: normal;
+        }
+
+        /* Formulaire d'ajout de commande */
+        #commande-form {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #commande-form input {
+            padding: 10px;
+            margin-right: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #fff; /* Bordure blanche */
+            background-color: #333; /* Fond sombre pour le champ */
+            color: white;
+        }
+
+        #commande-form button {
+            padding: 10px 15px;
+            background-color: #444; /* Fond gris foncé */
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        #commande-form button:hover {
+            background-color: #555; /* Fond plus clair au survol */
+        }
+
+        /* Styles pour la section des commandes (les deux colonnes côte à côte) */
+        #commandes {
+            display: flex;
+            flex-direction: row; /* Colonnes côte à côte */
+            gap: 20px; /* Espacement entre les colonnes */
+            justify-content: space-between; /* Pour espacer les colonnes au maximum */
+        }
+
+        /* Chaque colonne pour les commandes */
+        .commande-column {
+            width: 48%; /* Chaque colonne prend environ 48% de la largeur */
+            padding: 20px;
+            border: 1px solid #fff; /* Bordure blanche */
+            border-radius: 8px;
+            min-height: 300px;
+            background-color: #222; /* Fond sombre pour les colonnes */
+        }
+
+        /* Ajout de titres pour chaque colonne */
+        .commande-column h3 {
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 20px;
+        }
+
+        /* Style pour chaque commande */
+        .commande-item {
+            padding: 10px;
+            border: 1px solid #444; /* Bordure grise */
+            margin-bottom: 15px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #333; /* Fond sombre pour chaque commande */
+            color: #fff; /* Texte blanc */
+            font-size: 25px; /* Taille de police plus petite pour le numéro */
+            font-weight: bold; /* Mettre le texte en gras pour le numéro */
+            height: 50px; /* Hauteur plus petite pour la commande */
+            max-width: 250px; /* Limiter la largeur de chaque case */
+            overflow: hidden; /* Empêche le débordement du texte */
+        }
+
+        /* Conteneur pour le texte de la commande */
+        .commande-item .commande-text {
+            flex: 1; /* Occupe l'espace restant */
+            text-overflow: ellipsis; /* Ajoute des points de suspension si le texte est trop long */
+            white-space: nowrap; /* Empêche le texte de se déformer */
+            overflow: hidden;
+        }
+
+        /* Bouton de suppression */
+        .commande-item button {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px; /* Réduire la taille du texte pour le bouton */
+        }
+
+        /* Style pour les boutons supprimés */
+        .commande-item button:hover {
+            background-color: darkred;
+        }
+
+        /* Assurer la disposition sur petit écran */
+        @media (max-width: 768px) {
+            #commandes {
+                flex-direction: column; /* Sur petit écran, les colonnes deviennent verticales */
+                gap: 15px;
+            }
+
+            .commande-column {
+                width: 100%; /* Chaque colonne prend toute la largeur */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- En-tête avec logo et titre -->
+    <header>
+      
+        <h1>QUARTIER GENERAL</h1>
+        <button id="fullscreen-btn" onclick="toggleFullScreen()">plein écran</button>
+
+    </header>
+
+    <!-- Formulaire pour ajouter une commande -->
+    <div id="commande-form">
+        <h2>Ajouter une commande</h2>
+        <input type="number" id="numCommande" placeholder="Numéro de commande">
+        <button onclick="ajouterCommande('en cours')">En cours</button>
+        <button onclick="ajouterCommande('prête')">Prête</button>
+    </div>
+
+    <!-- Section pour afficher les commandes -->
+    <div id="commandes">
+        <!-- Colonne pour les commandes en cours -->
+        <div class="commande-column">
+            <h3>Commandes en cours</h3>
+            <div id="commandes-en-cours"></div>
+        </div>
+
+        <!-- Colonne pour les commandes prêtes -->
+        <div class="commande-column">
+            <h3>Commandes prêtes</h3>
+            <div id="commandes-pretes"></div>
+        </div>
+    </div>
+
+    <script>
+        // Fonction pour charger et afficher les commandes en temps réel
+        async function loadCommandes() {
+            const response = await fetch('/api/commandes');
+            const commandes = await response.json();
+            
+            const commandesEnCoursDiv = document.getElementById('commandes-en-cours');
+            const commandesPretesDiv = document.getElementById('commandes-pretes');
+            
+            commandesEnCoursDiv.innerHTML = ''; // Efface les anciennes commandes en cours
+            commandesPretesDiv.innerHTML = ''; // Efface les anciennes commandes prêtes
+
+            commandes.forEach(commande => {
+                const commandeDiv = document.createElement('div');
+                commandeDiv.classList.add('commande-item');
+                commandeDiv.innerHTML = `<span class="commande-text">${commande.id_commande} </span>
+                    <button onclick="supprimerCommande(${commande.id_commande})">Supprimer</button>`;
+
+                if (commande.status === 'en cours') {
+                    commandesEnCoursDiv.appendChild(commandeDiv);
+                } else if (commande.status === 'prête') {
+                    commandesPretesDiv.appendChild(commandeDiv);
+                }
+            });
+        }
+
+        // Fonction pour ajouter une nouvelle commande avec un statut donné
+        async function ajouterCommande(status) {
+            const numCommande = document.getElementById('numCommande').value;
+
+            if (!numCommande) {
+                return;  // Si aucun numéro n'est saisi, on ne fait rien
+            }
+
+            const newCommande = {
+                id_commande: parseInt(numCommande),
+                status: status
+            };
+
+            const response = await fetch('/api/commandes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newCommande)
+            });
+
+            if (response.ok) {
+                loadCommandes(); // Rafraîchissement de la liste
+            }
+        }
+         // Fonction pour activer ou désactiver le mode plein écran
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+
+        // Fonction pour supprimer une commande
+        async function supprimerCommande(id_commande) {
+            const response = await fetch(`/api/commandes/${id_commande}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                loadCommandes(); // Rafraîchissement de la liste
+            }
+        }
+
+        // Charger les commandes au chargement de la page
+        loadCommandes();
+    </script>
+</body>
+</html>
